@@ -35,7 +35,7 @@ print("读取验证集数据，每个文件读{}条数据".format(singlefile_val
 val_dataset = MyDataSet(folder_path = test_path)
 
 nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8])  # number of workers
-nw=0 # in windows
+nw = 0 # in windows
 print('Using {} dataloader workers every process'.format(nw))
 
 train_loader = torch.utils.data.DataLoader(train_dataset,
@@ -50,20 +50,22 @@ val_loader = torch.utils.data.DataLoader(val_dataset,
                                             pin_memory=True,
                                             num_workers=nw)
                                             # 清空txt数据
-with open("loss.txt", "w") as f_loss:
-    f_loss.write("")
-with open("accuracy.txt", "w") as f_accuracy:
-    f_accuracy.write("")
+with open("loss.txt", "w") as f:
+    f.write("")
+with open("accuracy.txt", "w") as f:
+    f.write("")
 with open("accuracy_test.txt", "w") as f:
     f.write("")
 with open("loss_test.txt", "w") as f:
     f.write("")
-print(epochs)
+
+print("total epochs:",epochs)
 from utils import train_one_epoch,test_model
+print("using ",torch.cuda.is_available())
 device = torch.device('cuda:0' if torch.cuda.is_available() else "cpu")
 model=Student().to(device)
 model.train()
-optimizer = torch.optim.SGD(model.parameters(), lr = lr,weight_decay=1e-3)
+optimizer = torch.optim.SGD(model.parameters(), lr = lr)
 for epoch in range(epochs):
     # train
     train_loss, train_accuracy = train_one_epoch(model=model,

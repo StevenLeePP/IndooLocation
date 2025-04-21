@@ -49,8 +49,8 @@ def Student():
     b3 = nn.Sequential(*resnet_block(64, 64, 2))
     b4 = nn.Sequential(*resnet_block(64, 128, 2))
     b5 = nn.Sequential(*resnet_block(128, 256, 2))
-    net = nn.Sequential(b1, b2, b4, b5,
-                        nn.AdaptiveAvgPool2d((1, 1)),
-                        nn.Flatten(), nn.Linear(256, 5))
 
+    net = nn.Sequential(b1, b2, b3, b4, b5,
+                        nn.AdaptiveAvgPool2d((1, 1)),
+                        nn.Flatten(), nn.Linear(256, 512),nn.ReLU(),nn.Dropout(0.3),nn.Linear(512, 5))
     return net

@@ -44,7 +44,7 @@ plt.legend()
 plt.tight_layout()  # 自动调整子图间距
 # plt.show()
 
-plt.savefig("./accuracy_save/2.jpg")
+plt.savefig("./accuracy_save/3.jpg")
 print("绘图完毕")
 
 

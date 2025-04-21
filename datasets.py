@@ -24,6 +24,7 @@ class MyDataSet(Dataset):
                 data_total = np.vstack((data_total,input_data))
             #----
         self.data_total = data_total.astype(np.float32)
+        # valid_len = (self.data_total.shape[0] // (256*32)) * 256*32
         valid_len = (self.data_total.shape[0] // (256*32)) * 256*32
 
         print("valid_len is",valid_len)
@@ -39,7 +40,7 @@ class MyDataSet(Dataset):
         print('===============')
         print(' ')
         print('输入数据总维度为 ', self.data_total[:,:,:,1:].shape)  # (N, 256, 8)
-        print('label总维度为 ', self.data_total[:,:,:,0].shape)      # (N, 256)
+        print('label总维度为 ', self.data_total[:,:,:,0].shape)     # (N, 256)
         print(' ')
         print('===============')
         print('')
