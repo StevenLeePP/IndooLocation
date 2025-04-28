@@ -21,10 +21,10 @@ from PIL import Image
 device = torch.device('cuda:0' if torch.cuda.is_available() else "cpu")
 singlefile_data_num = 400  #每个文件训练读取数据个数
 singlefile_val_data_num = 100 #每个文件验证读取数据个数
-batch_size = 64
+batch_size = 32
 epochs = 101
-lr = 0.005    #学习率大小
-train_path = r"/home/luhan/lap/IndooLocation/Data/train"
+lr = 0.001    #学习率大小
+train_path = r"/home/luhan/lap/IndooLocation/Data/test"
 test_path =  r"/home/luhan/lap/IndooLocation/Data/test"
 if os.path.exists("./weights") is False:
     os.makedirs("./weights")

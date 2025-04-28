@@ -11,49 +11,60 @@ def calculate_accuracy(pred, labels):
     total = labels.size(0)
     return correct / total * 100
 
-def train_one_epoch(model, optimizer, data_loader, device, epoch):
+def train_one_epoch(model, optimizer, data_loader, device, epoch, save_path="train_predictions.csv"):
     model.train()
-    loss_function = torch.nn.CrossEntropyLoss()
+    loss_function = torch.nn.MSELoss()
     optimizer.zero_grad()
     
     epoch_loss = 0
     total_accuracy = 0
     num_batches = 0
 
-    for step, data in enumerate(data_loader):
-        images, labels = data
-        images = images.to(device)
-        labels = labels.long().squeeze().to(device)
-        
-        pred = model(images)
-        
-        try:
-            loss = loss_function(pred, labels)
-            loss.backward()
-            
-            accuracy = calculate_accuracy(pred, labels)
-            total_accuracy += accuracy
-            epoch_loss += loss.item()
-            num_batches += 1
-            
-            data_loader.desc = f"[train epoch {epoch}] step:{step}, loss: {loss.item():.3f}, accuracy: {accuracy:.2f}%"
-            
-            if not torch.isfinite(loss):
-                print('WARNING: non-finite loss, ending training ', loss)
-                sys.exit(1)
+    # 打开文件以写入预测值和真实标签
+    with open(save_path, 'a', newline='') as csvfile:
+        csvwriter = csv.writer(csvfile)
 
-            optimizer.step()
-            optimizer.zero_grad()
+        for step, data in enumerate(data_loader):
+            images, labels = data
+            images = images.to(device)
+            labels = labels.squeeze().to(device)
+            
+            pred = model(images)
+            
+            try:
+                loss = loss_function(pred, labels)
+                loss.backward()
                 
-        except RuntimeError as e:
-            print(f"Error at step {step}")
-            print(f"Labels range: {labels.min().item()} to {labels.max().item()}")
-            print(f"Pred shape: {pred.shape}, Labels shape: {labels.shape}")
-            raise e
+                # 将预测值和真实标签写入文件
+                # 只写入第一个样本的数据
+                csvwriter.writerow([
+                    step,
+                    pred[0, 0].cpu().detach().numpy(),
+                    pred[0, 1].cpu().detach().numpy(),
+                    labels[0, 0].cpu().detach().numpy(),
+                    labels[0, 1].cpu().detach().numpy()
+                ])
+                
+                epoch_loss += loss.item()
+                num_batches += 1
+                
+                data_loader.desc = f"[train epoch {epoch}] step:{step}, loss: {loss.item():.3f}%"
+                
+                if not torch.isfinite(loss):
+                    print('WARNING: non-finite loss, ending training ', loss)
+                    sys.exit(1)
+
+                optimizer.step()
+                optimizer.zero_grad()
+                    
+            except RuntimeError as e:
+                print(f"Error at step {step}")
+                print(f"Labels range: {labels.min().item()} to {labels.max().item()}")
+                print(f"Pred shape: {pred.shape}, Labels shape: {labels.shape}")
+                raise e
 
     avg_loss = epoch_loss / num_batches
-    avg_accuracy = total_accuracy / num_batches
-    
+    avg_accuracy = 0
     print(" ")
     print("[train epoch {}] 平均误差:{:.3f}, 平均准确率:{:.2f}%".format(
         epoch+1, avg_loss, avg_accuracy))
@@ -63,7 +74,7 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch):
 
 @torch.no_grad()
 def test_model(model, data_loader, device):
-    loss_function = torch.nn.CrossEntropyLoss()
+    loss_function = torch.nn.MSELoss()
     model.eval()
 
     all_preds = []
@@ -75,20 +86,20 @@ def test_model(model, data_loader, device):
     for step, data in enumerate(data_loader):
         images, labels = data
         images = images.to(device)
-        labels = labels.long().squeeze().to(device)
-        
+        labels = labels.squeeze().to(device)
         pred = model(images)
         loss = loss_function(pred, labels)
         
-        accuracy = calculate_accuracy(pred, labels)
-        total_accuracy += accuracy
+        # accuracy = calculate_accuracy(pred, labels)
+        # total_accuracy += accuracy
         num_batches += 1
         
         all_preds.append(pred.cpu().detach().numpy())
         all_labels.extend(labels.cpu().numpy())  
         all_losses.append(loss.item())
 
-    avg_accuracy = total_accuracy / num_batches
+    # avg_accuracy = total_accuracy / num_batches
+    avg_accuracy=0
     pred_all = np.concatenate(all_preds, axis=0)
     labels_all = np.array(all_labels)  
     loss_all = np.array(all_losses)

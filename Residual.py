@@ -38,19 +38,37 @@ def resnet_block(input_channels, num_channels, num_residuals,
             blk.append(Residual(num_channels, num_channels))
     return blk
 
+
 def Student():
     b1 = nn.Sequential(OrderedDict([
-                    ('Conv',nn.Conv2d(32, 32, kernel_size=(3,2),stride = (1,2),padding = (1,0))),    # 之前是1
-                    ('BatchNorm2d',nn.BatchNorm2d(32)),
+                    ('Conv',nn.Conv2d(1, 8, kernel_size=(3,2),stride = (1,2),padding = (1,0))),    # 之前是1
+                    ('BatchNorm2d',nn.BatchNorm2d(8)),
                     ('RelU',nn.ReLU()),
                     ('MaxPool',nn.MaxPool2d(kernel_size=(5,1), stride=(2,1),padding = (2,0)))
                     ]))
-    b2 = nn.Sequential(*resnet_block(32, 64, 2))
-    b3 = nn.Sequential(*resnet_block(64, 64, 2))
-    b4 = nn.Sequential(*resnet_block(64, 128, 2))
-    b5 = nn.Sequential(*resnet_block(128, 256, 2))
+    b2 = nn.Sequential(*resnet_block(8, 16, 2))
+    b3 = nn.Sequential(*resnet_block(16, 32, 2))
+    b4 = nn.Sequential(*resnet_block(32, 64, 2))
+    b5 = nn.Sequential(*resnet_block(64, 128, 2))
 
-    net = nn.Sequential(b1, b2, b3, b4, b5,
+    net = nn.Sequential(b1, b2, b3, b4,b5,
                         nn.AdaptiveAvgPool2d((1, 1)),
-                        nn.Flatten(), nn.Linear(256, 512),nn.ReLU(),nn.Dropout(0.3),nn.Linear(512, 5))
+                        nn.Flatten(), nn.Linear(128, 32),nn.ReLU(),nn.Dropout(0.3),nn.Linear(32, 2))
     return net
+# 维度(-1,1,256,8)
+# def Student():
+#     b1 = nn.Sequential(OrderedDict([
+#                     ('Conv',nn.Conv2d(1, 4, kernel_size=(3,2),stride = (1,2),padding = (1,0))),    # 之前是1
+#                     ('BatchNorm2d',nn.BatchNorm2d(4)),
+#                     ('RelU',nn.ReLU()),
+#                     ('MaxPool',nn.MaxPool2d(kernel_size=(5,1), stride=(2,1),padding = (2,0)))
+#                     ]))
+#     b2 = nn.Sequential(*resnet_block(4, 8, 2))
+#     b3 = nn.Sequential(*resnet_block(8, 16, 2))
+#     b4 = nn.Sequential(*resnet_block(16, 32, 2))
+#     b5 = nn.Sequential(*resnet_block(32, 64, 2))
+
+#     net = nn.Sequential(b1, b2, b3, b4, b5,
+#                         nn.AdaptiveAvgPool2d((1, 1)),
+#                         nn.Flatten(), nn.Linear(64, 64),nn.ReLU(),nn.Dropout(0.3),nn.Linear(64, 2))
+#     return net
