@@ -17,10 +17,10 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, save_path="tra
     optimizer.zero_grad()
     
     epoch_loss = 0
-    total_accuracy = 0
+    epoch_mae = 0  # 初始化平均绝对误差
     num_batches = 0
 
-    # 打开文件以写入预测值和真实标签
+    # 打开文件以追加预测值和真实标签
     with open(save_path, 'a', newline='') as csvfile:
         csvwriter = csv.writer(csvfile)
 
@@ -28,27 +28,46 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, save_path="tra
             images, labels = data
             images = images.to(device)
             labels = labels.squeeze().to(device)
-            
+            # 打印 labels 的值
+            # print(f"Step {step}: Labels = {labels.cpu().numpy()}")
             pred = model(images)
+            # pred = torch.round(pred, decimals=2)  # 将 pred 的值保留到小数点后 2位
             
             try:
                 loss = loss_function(pred, labels)
                 loss.backward()
                 
-                # 将预测值和真实标签写入文件
                 # 只写入第一个样本的数据
-                csvwriter.writerow([
-                    step,
-                    pred[0, 0].cpu().detach().numpy(),
-                    pred[0, 1].cpu().detach().numpy(),
-                    labels[0, 0].cpu().detach().numpy(),
-                    labels[0, 1].cpu().detach().numpy()
-                ])
+
+                # csvwriter.writerow([
+                #     step,
+                #     pred[0, 0].cpu().detach().numpy(),
+                #     pred[0, 1].cpu().detach().numpy(),
+                #     labels[0, 0].cpu().detach().numpy(),
+                #     labels[0, 1].cpu().detach().numpy()
+                # ])
+
+                for i in range(pred.shape[0]):  # 遍历批次中的每个样本
+                    csvwriter.writerow([
+                        step,
+                        pred[i, 0].cpu().detach().numpy(),
+                        pred[i, 1].cpu().detach().numpy(),
+                        labels[i, 0].cpu().detach().numpy(),
+                        labels[i, 1].cpu().detach().numpy()
+                    ])
                 
                 epoch_loss += loss.item()
+                
+                # 计算平均绝对误差 (MAE)
+                mae = torch.mean(torch.abs(pred - labels))
+                epoch_mae += mae.item()
+                # # 计算均方根误差 (RMSE)
+                # rmse = torch.sqrt(torch.mean((pred - labels) ** 2))
+                # epoch_rmse += rmse.item()
+                
                 num_batches += 1
                 
-                data_loader.desc = f"[train epoch {epoch}] step:{step}, loss: {loss.item():.3f}%"
+                data_loader.desc = f"[train epoch {epoch}] step:{step}, loss: {loss.item():.3f}, MAE: {mae.item():.3f}"
                 
                 if not torch.isfinite(loss):
                     print('WARNING: non-finite loss, ending training ', loss)
@@ -64,13 +83,13 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, save_path="tra
                 raise e
 
     avg_loss = epoch_loss / num_batches
-    avg_accuracy = 0
+    avg_mae = epoch_mae / num_batches  # 计算平均 MAE
     print(" ")
-    print("[train epoch {}] 平均误差:{:.3f}, 平均准确率:{:.2f}%".format(
-        epoch+1, avg_loss, avg_accuracy))
+    print("[train epoch {}] 平均误差:{:.3f}, 平均绝对误差:{:.3f}".format(
+        epoch+1, avg_loss, avg_mae))
     print("====================")
 
-    return avg_loss, avg_accuracy
+    return avg_loss, avg_mae
 
 @torch.no_grad()
 def test_model(model, data_loader, device):

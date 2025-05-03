@@ -99,6 +99,10 @@ position_to_coordinates = {
     37: (-60.0, 960.0),
     38: (60.0, 960.0)
 }
+for position in position_to_coordinates:
+    x, y = position_to_coordinates[position]
+    scale = 0.0001  # 修改坐标的放缩倍数
+    position_to_coordinates[position] = (scale*x, scale*y)  
 # 定义Dataset类
 class MyDataSet(Dataset):
     def __init__(self, folder_path):
@@ -137,10 +141,7 @@ class MyDataSet(Dataset):
         print('输入数据总维度为 ', self.data_total[:,:,:,1:].shape)  # (N, 32, 256, 8)
         print('标签总维度为 ', self.data_total[:,:,:,0].shape)     # (N, 256)
         print('='*40)
-        for position in position_to_coordinates:
-            x, y = position_to_coordinates[position]
-            scale = 0.01   # 修改坐标的放缩倍数
-            position_to_coordinates[position] = (scale*x, scale*y)   
+ 
         # 保存坐标映射
         self.position_to_coordinates = position_to_coordinates
 
@@ -161,13 +162,16 @@ class MyDataSet(Dataset):
         return features, label
 
 if __name__ == "__main__":
-    folder_path = '/home/luhan/lap/IndooLocation/Data/srs-38points-1000time-1cycles/01'
+    folder_path = r'/home/luhan/lap/IndooLocation/Data/srs-38points-1000time-1cycles/01'
     dataset = MyDataSet(folder_path=folder_path)
 
-
     # 创建DataLoader对象
-    dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
-
+    # dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
+    dataloader = torch.utils.data.DataLoader(dataset,
+                                                batch_size=2,  #weight_decay=1e-3
+                                                shuffle=True,
+                                                pin_memory=True,
+                                                num_workers=8)
     # 读取一个batch的数据
     print("打印前几个数据样本：")
     for i, (features, labels) in enumerate(dataloader):
