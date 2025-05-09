@@ -120,7 +120,6 @@ class MyDataSet(Dataset):
         for file_name in os.listdir(folder_path):
             if file_name.endswith(".bin"):  # 确保只处理 .bin 文件
                 file_path = os.path.join(folder_path, file_name)
-                # print(f"处理文件: {file_path}")
                 processed_data = process_srs_file(file_path)
                 all_processed_data.append(processed_data)
 
@@ -135,6 +134,13 @@ class MyDataSet(Dataset):
         
         # 数据重塑，假设每个输入的特征有32个时间步长和256个样本
         self.data_total = self.data_total.reshape(-1, 1, 1024, self.data_total.shape[1])     
+        
+        # 对特征数据进行归一化
+        feature_data = self.data_total[:,:,:,1:]
+        self.feature_mean = np.mean(feature_data)
+        self.feature_std = np.std(feature_data)
+        self.data_total[:,:,:,1:] = (feature_data - self.feature_mean) / self.feature_std
+        
         self.len = self.data_total.shape[0]
         
         print('='*40)

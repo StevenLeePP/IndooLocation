@@ -3,7 +3,7 @@ import argparse
 import torch
 from datasets import MyDataSet
 # from vit_model import VisionTransformer
-from Residual import Residual
+# from Residual import Residual
 from Residual import Student
 
 
@@ -24,8 +24,8 @@ singlefile_val_data_num = 100 #每个文件验证读取数据个数
 batch_size = 32
 epochs = 101
 lr = 0.001    #学习率大小
-train_path = r"/home/luhan/lap/IndooLocation/Data/test"
-test_path =  r"/home/luhan/lap/IndooLocation/Data/test"
+train_path = r"/home/luhan/lap/IndooLocation/Data/srs-38points-1000time-1cycles/01"
+test_path =  r"/home/luhan/lap/IndooLocation/Data/srs-38points-1000time-1cycles/01"
 if os.path.exists("./weights") is False:
     os.makedirs("./weights")
 # 实例化训练数据集
@@ -78,7 +78,7 @@ for epoch in range(epochs):
         f_loss.write("loss:{}\n".format(train_loss))
     with open("accuracy.txt", "a") as f_accuracy:
         f_accuracy.write("accuracy:{}\n".format(train_accuracy))
-    # validate
+   # validate
     if (epoch+1) % 5 == 0:
         pred, test_loss, labels, test_accuracy = test_model(model=model,
                                 data_loader=val_loader,
@@ -96,7 +96,11 @@ for epoch in range(epochs):
         
     if (epoch+1) % 20 == 0:
         print("保存模型")
-        # torch.save(model.state_dict(), "./weights/model-{}.pth".format(epoch))
+     # torch.save(model.state_dict(), "./weights/model-{}.pth".format(epoch))
+# torch.save(model.state_dict(), "./weights/model-{}.pth".format(epoch))
+# torch.save(model.state_dict(), "./weights/model-{}.pth".format(epoch))
+# torch.save(model.state_dict(), "./weights/model-{}.pth".format(epoch))
+   # torch.save(model.state_dict(), "./weights/model-{}.pth".format(epoch))
         if not os.path.exists('./model_save'):
             os.makedirs('./model_save')
         torch.save({

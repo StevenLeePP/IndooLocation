@@ -1,76 +1,45 @@
 import torch
 from torch import nn
-from collections import OrderedDict
-from torch.nn import functional as F
 
-
-class Residual(nn.Module):  #@save
-    def __init__(self, input_channels, num_channels,
-                 use_1x1conv=False, strides=(1,1)):
-        super().__init__()
-        self.conv1 = nn.Conv2d(input_channels, num_channels,
-                               kernel_size=(3,1), padding=(1,0), stride=strides)
-        self.conv2 = nn.Conv2d(num_channels, num_channels,
-                               kernel_size=(3,1), padding=(1,0))
-        if use_1x1conv:
-            self.conv3 = nn.Conv2d(input_channels, num_channels,
-                                   kernel_size=1, stride=strides)
-        else:
-            self.conv3 = None
-        self.bn1 = nn.BatchNorm2d(num_channels)
-        self.bn2 = nn.BatchNorm2d(num_channels)
-
-    def forward(self, X):
-        Y = F.relu(self.bn1(self.conv1(X)))
-        Y = self.bn2(self.conv2(Y))
-        if self.conv3:
-            X = self.conv3(X)
-        Y += X
-        return F.relu(Y)
-
-def resnet_block(input_channels, num_channels, num_residuals,
-                 first_block=False):
-    blk = []
-    for i in range(num_residuals):
-        if i == 0 and not first_block:
-            blk.append(Residual(input_channels, num_channels,use_1x1conv=True, strides=(4,2)))
-        else:
-            blk.append(Residual(num_channels, num_channels))
-    return blk
-
-
-def Student():
-    b1 = nn.Sequential(OrderedDict([
-                    ('Conv',nn.Conv2d(1, 8, kernel_size=(3,2),stride = (1,2),padding = (1,0))),    # 之前是1
-                    ('BatchNorm2d',nn.BatchNorm2d(8)),
-                    ('RelU',nn.ReLU()),
-                    # ('MaxPool',nn.MaxPool2d(kernel_size=(5,1), stride=(2,1),padding = (2,0)))
-                    ]))
-    b2 = nn.Sequential(*resnet_block(8, 16, 2))
-    b3 = nn.Sequential(*resnet_block(16, 32, 2))
-    b4 = nn.Sequential(*resnet_block(32, 64, 2))
-    b5 = nn.Sequential(*resnet_block(64, 128, 2))
-    b6 = nn.Sequential(*resnet_block(128, 256, 2))
-
-    net = nn.Sequential(b1, b2, b3, b4,b5,
-                        nn.AdaptiveAvgPool2d((1, 1)),
-                        nn.Flatten(), nn.Linear(128, 32),nn.ReLU(),nn.Dropout(0.3),nn.Linear(32, 2))
-    return net
-
-# 维度(-1,1,256,8)
-# def Student():
-#     b1 = nn.Sequential(OrderedDict([
-#                     ('Conv',nn.Conv2d(1, 4, kernel_size=(3,2),stride = (1,2),padding = (1,0))),    # 之前是1
-#                     ('BatchNorm2d',nn.BatchNorm2d(4)),
-#                     ('RelU',nn.ReLU()),
-#                     ('MaxPool',nn.MaxPool2d(kernel_size=(5,1), stride=(2,1),padding = (2,0)))
-#                     ]))
-#     b2 = nn.Sequential(*resnet_block(4, 8, 2))
-#     b3 = nn.Sequential(*resnet_block(8, 16, 2))
-#     b4 = nn.Sequential(*resnet_block(16, 32, 2))
-#     b5 = nn.Sequential(*resnet_block(32, 64, 2))
-
-#     net = nn.Sequential(b1, b2, b3, b4, b5,
-#                         nn.AdaptiveAvgPool2d((1, 1)),
-#                         nn.Flatten(), nn.Linear(64, 64),nn.ReLU(),nn.Dropout(0.3),nn.Linear(64, 2))
-#     return net
+class Student(nn.Module):
+    def __init__(self):
+        super(Student, self).__init__()
+        
+        # CNN layers
+        self.cnn = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size=(3, 3), padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2),
+            
+            nn.Conv2d(32, 64, kernel_size=(3, 3), padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2)
+        )
+        
+        self.flatten_size = 64 * 256 * 2  # Based on input (1024, 8) after pooling
+        
+        # MLP layers
+        self.mlp = nn.Sequential(
+            nn.Linear(self.flatten_size, 1024),
+            nn.BatchNorm1d(1024),  
+            nn.ReLU(),
+            
+            nn.Linear(1024, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            
+            nn.Linear(256, 64),
+            nn.BatchNorm1d(64),
+            nn.ReLU(),
+            nn.Linear(64, 2)
+        )
+    
+    def forward(self, x):
+        # Input x shape: (batch_size, 1, 1024, 8)
+        x = self.cnn(x)
+        batch_size = x.size(0)
+        x = x.view(batch_size, -1)
+        x = self.mlp(x)
+        return x
