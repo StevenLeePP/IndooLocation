@@ -4,100 +4,94 @@ import numpy as np
 import pandas as pd
 import os
 import tqdm
-def process_srs_file(file_path):
-    """
-    处理二进制文件，提取数据并转换为复数形式的数组。
+def process_srs_file(folder_path):
+    # 定义文件夹路径
+    # folder_path = r'20250530'  # 替换为你的文件夹路径
 
-    参数:
-        file_path (str): 二进制文件的路径。
+    # 初始化一个空的 NumPy 数组，用于存储最终结果
+    result_array = np.empty((0, 4), dtype=np.int16)
 
-    返回:
-        processed_data (numpy.ndarray): 处理后的数组。
-    """
-# 提取文件名的最后两位数字作为标签
-    file_name = os.path.basename(file_path)
-    # 假设文件名格式为 "srs_get_XX.bin"，提取 "XX" 部分
-    label = int(file_name.split('_')[-1].split('.')[0])  # 提取 "01" 并转换为整数
-    # 打开二进制文件
-    with open(file_path, "rb") as fid1:
-        # 读取所有数据，假设数据类型为 uint16
-        fdata = np.fromfile(fid1, dtype=np.uint16)
+    # 遍历文件夹中的所有文件
+    for file_name in os.listdir(folder_path):
+        # 检查文件扩展名是否为 .bin
+        if file_name.endswith('.bin'):
 
-    # 计算周期长度
-    cycle_length = 2048 * 2 * 4 + 1
+            # 构造完整的文件路径
+            file_path = os.path.join(folder_path, file_name)
+            # 从文件名中提取数字作为标签
+            label_str = file_name[8:10]  # 提取第 8 和第 9 个字符
+            label = int(label_str)  # 将字符串转换为整数
 
-    # 计算周期数量
-    num_cycles = len(fdata) // cycle_length
-    # 初始化一个空列表来存储处理后的数据
-    processed_data = []
+            # 打开 .bin 文件并读取数据
+            data = np.fromfile(file_path, dtype=np.int16)
 
-    # 对每个周期进行处理
-    for i in range(num_cycles):
-        # 提取一个周期的数据
-        cycle_data = fdata[i * cycle_length : (i + 1) * cycle_length]
-        cycle_data = cycle_data[:-1]  # 去掉最后一个元素
+            # 计算需要的行数
+            num_rows = len(data) // 3
 
-        # 初始化复数形式的数组
-        antenna_data_complex = np.empty((2048, 8), dtype=np.uint16)
+            # 如果数据不能整除3，截取前 num_rows * 3 个数据
+            if len(data) % 3 != 0:
+                data = data[:num_rows * 3]
 
-        # 填充复数形式的数组
-        for j in range(4):
-            antenna_data_complex[:, j * 2] = cycle_data[j * 2048 * 2 : (j + 1) * 2048 * 2 : 2]  # 实部
-            antenna_data_complex[:, j * 2 + 1] = cycle_data[j * 2048 * 2 + 1 : (j + 1) * 2048 * 2 : 2]  # 虚部
+            # 将数据重新排列成二维数组，每行3个 int16
+            two_dim_array = data.reshape(-1, 3)
 
-        # 保留奇数行
-        antenna_data_complex = antenna_data_complex[::2, :]
-        
+            # 创建标签列，标签值为提取的数字
+            label_column = np.full((num_rows, 1), label, dtype=np.int16)
 
-        # 将处理后的数据添加到列表中
-        processed_data.append(antenna_data_complex)
+            # 将标签列添加到二维数组的最左侧
+            temp_array = np.hstack((label_column, two_dim_array))
 
-    # 将列表中的所有数据合并成一个大数组
-    processed_data = np.concatenate(processed_data, axis=0)
-    label_column = np.full((processed_data.shape[0], 1), label, dtype=np.uint16)
-    processed_data = np.hstack((label_column, processed_data))
+            # 将当前文件的结果纵向拼接到最终结果数组中
+            result_array = np.vstack((result_array, temp_array))
+    return result_array
 
-    return processed_data
+# position_to_coordinates = {
+#     1: (0.0, 120.0),
+#     2: (120.0, 120.0),
+#     3: (240.0, 120.0),
+#     4: (360.0, 120.0),
+#     5: (360.0, 240.0),
+#     6: (240.0, 240.0),
+#     7: (120.0, 240.0),
+#     8: (0.0, 240.0),
+#     9: (-120.0, 240.0),
+#     10: (-240.0, 240.0),
+#     11: (-180.0, 360.0),
+#     12: (-180.0, 480.0),
+#     13: (-180.0, 600.0),
+#     14: (-180.0, 720.0),
+#     15: (-60.0, 360.0),
+#     16: (60.0, 360.0),
+#     17: (180.0, 360.0),
+#     18: (300.0, 360.0),
+#     19: (300.0, 480.0),
+#     20: (420.0, 480.0),
+#     21: (420.0, 600.0),
+#     22: (300.0, 600.0),
+#     23: (180.0, 600.0),
+#     24: (60.0, 600.0),
+#     25: (-60.0, 600.0),
+#     26: (-60.0, 480.0),
+#     27: (60.0, 480.0),
+#     28: (-60.0, 720.0),
+#     29: (60.0, 720.0),
+#     30: (180.0, 720.0),
+#     31: (180.0, 840.0),
+#     32: (60.0, 840.0),
+#     33: (-60.0, 840.0),
+#     34: (-180.0, 900.0),
+#     35: (-300.0, 1020.0),
+#     36: (-180.0, 1020.0),
+#     37: (-60.0, 960.0),
+#     38: (60.0, 960.0)
+# }
 
 position_to_coordinates = {
-    1: (0.0, 120.0),
-    2: (120.0, 120.0),
-    3: (240.0, 120.0),
-    4: (360.0, 120.0),
-    5: (360.0, 240.0),
-    6: (240.0, 240.0),
-    7: (120.0, 240.0),
-    8: (0.0, 240.0),
-    9: (-120.0, 240.0),
-    10: (-240.0, 240.0),
-    11: (-180.0, 360.0),
-    12: (-180.0, 480.0),
-    13: (-180.0, 600.0),
-    14: (-180.0, 720.0),
-    15: (-60.0, 360.0),
-    16: (60.0, 360.0),
-    17: (180.0, 360.0),
-    18: (300.0, 360.0),
-    19: (300.0, 480.0),
-    20: (420.0, 480.0),
-    21: (420.0, 600.0),
-    22: (300.0, 600.0),
-    23: (180.0, 600.0),
-    24: (60.0, 600.0),
-    25: (-60.0, 600.0),
-    26: (-60.0, 480.0),
-    27: (60.0, 480.0),
-    28: (-60.0, 720.0),
-    29: (60.0, 720.0),
-    30: (180.0, 720.0),
-    31: (180.0, 840.0),
-    32: (60.0, 840.0),
-    33: (-60.0, 840.0),
-    34: (-180.0, 900.0),
-    35: (-300.0, 1020.0),
-    36: (-180.0, 1020.0),
-    37: (-60.0, 960.0),
-    38: (60.0, 960.0)
+    1: (360.0, 120.0),
+    2: (180.0, 360.0),
+    3: (0.0, 120.0),
+    4: (180.0, 600.0),
+    5: (60.0, 840.0)
 }
 for position in position_to_coordinates:
     x, y = position_to_coordinates[position]
@@ -106,34 +100,16 @@ for position in position_to_coordinates:
 # 定义Dataset类
 class MyDataSet(Dataset):
     def __init__(self, folder_path):
-        """
-        遍历文件夹中的所有 .bin 文件，运行 process_binary_file 函数，并将结果数组纵向拼接。
-        参数:
-            folder_path (str): 文件夹路径。
-        返回:
-            combined_data (numpy.ndarray): 所有文件处理后的纵向拼接数组。
-        """
-        # 初始化一个空列表来存储每个文件的处理结果
-        all_processed_data = []
+        print("fold path is ",folder_path)
+        self.data_total = process_srs_file(folder_path)
 
-        # 遍历文件夹中的所有文件
-        for file_name in os.listdir(folder_path):
-            if file_name.endswith(".bin"):  # 确保只处理 .bin 文件
-                file_path = os.path.join(folder_path, file_name)
-                processed_data = process_srs_file(file_path)
-                all_processed_data.append(processed_data)
-
-        # 将所有处理后的数组纵向拼接
-        self.data_total = np.vstack(all_processed_data)
-          
-        valid_len = (self.data_total.shape[0] // (1024)) * 1024
-        print("valid_len is", valid_len)
+        # valid_len = (self.data_total.shape[0] // 3) * 3
+        # print("valid_len is", valid_len)
         print("origin_len is", self.data_total.shape[0])
 
-        self.data_total = self.data_total[:valid_len]
+        # self.data_total = self.data_total[:valid_len]
         
-        # 数据重塑，假设每个输入的特征有32个时间步长和256个样本
-        self.data_total = self.data_total.reshape(-1, 1, 1024, self.data_total.shape[1])     
+        self.data_total = self.data_total.reshape(-1, 1, 32,4)     
         
         # 对特征数据进行归一化
         feature_data = self.data_total[:,:,:,1:]
@@ -168,9 +144,9 @@ class MyDataSet(Dataset):
         return features, label
 
 if __name__ == "__main__":
-    folder_path = r'/home/luhan/lap/IndooLocation/Data/srs-38points-1000time-1cycles/01'
-    dataset = MyDataSet(folder_path=folder_path)
+    folder_path = r'20250530'
 
+    dataset = MyDataSet(folder_path=folder_path)
     # 创建DataLoader对象
     # dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
     dataloader = torch.utils.data.DataLoader(dataset,
