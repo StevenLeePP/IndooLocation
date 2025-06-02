@@ -32,8 +32,8 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, save_path="tra
             # print(f"Step {step}: Labels = {labels.cpu().numpy()}")
             pred = model(images)
             # pred = torch.round(pred, decimals=2)  # 将 pred 的值保留到小数点后 2位
-            
             try:
+                # print("pred, labels",pred, labels)
                 loss = loss_function(pred, labels)
                 loss.backward()
                 

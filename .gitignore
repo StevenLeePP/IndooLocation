@@ -1,8 +1,15 @@
 *.pyc
+*.bak
 __pycache__/
 Data/
 model_save/
 accuracy_save/
 model_save/
 Password.txt
+accuracy.txt
+loss.txt
+loss_test.txt
 train_predictions.csv
+result_plot_with_lines.png
+tempCodeRunnerFile.py
+accuracy_test.txt

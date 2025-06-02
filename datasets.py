@@ -144,7 +144,7 @@ class MyDataSet(Dataset):
         return features, label
 
 if __name__ == "__main__":
-    folder_path = r'20250530'
+    folder_path = r'01'
 
     dataset = MyDataSet(folder_path=folder_path)
     # 创建DataLoader对象
